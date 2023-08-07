@@ -169,7 +169,7 @@ StartLink.prototype.draw = function(c) {
 
 	// draw the text at the end without the arrow
 	var textAngle = Math.atan2(stuff.startY - stuff.endY, stuff.startX - stuff.endX);
-	drawText(c, this.text, stuff.startX, stuff.startY, textAngle, selectedObject == this);
+	drawText(c, this.text, stuff.startX, stuff.startY, textAngle, seleccionado(this));
 
 	// draw the head of the arrow
 	drawArrow(c, stuff.endX, stuff.endY, Math.atan2(-this.deltaY, -this.deltaX));
@@ -406,12 +406,12 @@ Link.prototype.draw = function(c) {
 		var textAngle = (startAngle + endAngle) / 2 + stuff.isReversed * Math.PI;
 		var textX = stuff.circleX + stuff.circleRadius * Math.cos(textAngle);
 		var textY = stuff.circleY + stuff.circleRadius * Math.sin(textAngle);
-		drawText(c, this.text, textX, textY, textAngle, selectedObject == this);
+		drawText(c, this.text, textX, textY, textAngle, seleccionado(this));
 	} else {
 		var textX = (stuff.startX + stuff.endX) / 2;
 		var textY = (stuff.startY + stuff.endY) / 2;
 		var textAngle = Math.atan2(stuff.endX - stuff.startX, stuff.startY - stuff.endY);
-		drawText(c, this.text, textX, textY, textAngle + this.lineAngleAdjust, selectedObject == this);
+		drawText(c, this.text, textX, textY, textAngle + this.lineAngleAdjust, seleccionado(this));
 	}
 };
 
@@ -490,7 +490,7 @@ Node.prototype.draw = function(c) {
 	c.stroke();
 
 	// draw the text
-	drawText(c, this.text, this.x, this.y, null, selectedObject == this);
+	drawText(c, this.text, this.x, this.y, null, seleccionado(this));
 
 	// draw a double circle for an accept state
 	if(this.isAcceptState) {
@@ -591,7 +591,7 @@ SelfLink.prototype.draw = function(c) {
 	// draw the text on the loop farthest from the node
 	var textX = stuff.circleX + stuff.circleRadius * Math.cos(this.anchorAngle);
 	var textY = stuff.circleY + stuff.circleRadius * Math.sin(this.anchorAngle);
-	drawText(c, this.text, textX, textY, this.anchorAngle, selectedObject == this);
+	drawText(c, this.text, textX, textY, this.anchorAngle, seleccionado(this));
 	// draw the head of the arrow
 	drawArrow(c, stuff.endX, stuff.endY, stuff.endAngle + Math.PI * 0.4);
 };
@@ -620,25 +620,24 @@ TemporaryLink.prototype.draw = function(c) {
 	drawArrow(c, this.to.x, this.to.y, Math.atan2(this.to.y - this.from.y, this.to.x - this.from.x));
 };
 
-function restoreBackup() {
+function restoreBackup(optKey, optFun) {
 	if(!localStorage || !JSON) {
 		return;
 	}
 
-	try {
-		var backup = JSON.parse(localStorage['fsm']);
-		restaurar(backup);
-	} catch(e) {
-		localStorage['fsm'] = '';
-	}
-}
-
-function saveBackup(nuevo) {
-	if(!localStorage || !JSON) {
-		return;
+	const todo = [{k:'fsm',f:restaurar}];
+	if (optKey && optFun) {
+		todo.push({k:optKey, f:optFun});
 	}
 
-	localStorage['fsm'] = JSON.stringify(nuevo);
+	for (let t of todo) {
+		try {
+			var data = JSON.parse(localStorage[t.k]);
+			t.f(data);
+		} catch(e) {
+			localStorage[t.k] = '';
+		}
+	}
 }
 
 function det(a, b, c, d, e, f, g, h, i) {
@@ -749,297 +748,33 @@ function drawText(c, originalText, x, y, angleOrNull, isSelected) {
 	}
 }
 
-var caretTimer;
-var caretVisible = true;
+let snapToPadding = 6; // pixels
+let hitTargetPadding = 6; // pixels
+let nodeRadius = 30;
+let margen = 10;
+let nodes = [];
+let links = [];
 
-function resetCaret() {
-	clearInterval(caretTimer);
-	caretTimer = setInterval('caretVisible = !caretVisible; draw(false)', 500);
-	caretVisible = true;
-}
-
-var canvas;
-var nodeRadius = 30;
-var margen = 10;
-var nodes = [];
-var links = [];
-
-var cursorVisible = true;
-var snapToPadding = 6; // pixels
-var hitTargetPadding = 6; // pixels
-var selectedObject = null; // either a Link or a Node
-var currentLink = null; // a Link
-var movingObject = false;
-var originalClick;
-
-function drawUsing(c) {
+function mde_drawUsing(c, f) {
 	c.clearRect(0, 0, canvas.width, canvas.height);
 	c.save();
 	c.translate(0.5, 0.5);
 
 	for(var i = 0; i < nodes.length; i++) {
 		c.lineWidth = 1;
-		c.fillStyle = c.strokeStyle = (nodes[i] == selectedObject) ? 'blue' : 'black';
+		c.fillStyle = c.strokeStyle = seleccionado(nodes[i]) ? 'blue' : 'black';
 		nodes[i].draw(c);
 	}
 	for(var i = 0; i < links.length; i++) {
 		c.lineWidth = 1;
-		c.fillStyle = c.strokeStyle = (links[i] == selectedObject) ? 'blue' : 'black';
+		c.fillStyle = c.strokeStyle = seleccionado(links[i]) ? 'blue' : 'black';
 		links[i].draw(c);
 	}
-	if(currentLink != null) {
-		c.lineWidth = 1;
-		c.fillStyle = c.strokeStyle = 'black';
-		currentLink.draw(c);
+	if(f) {
+		f();
 	}
 
 	c.restore();
-}
-
-function draw(save=true) {
-	const c = canvas.getContext('2d');
-	drawUsing(c);
-	c.strokeStyle = '#ccc';
-	dibujarRectangulo(fullBounds(c), c);
-	if (save) { actualizacion(); }
-}
-
-function selectObject(x, y) {
-	for(var i = 0; i < nodes.length; i++) {
-		if(nodes[i].containsPoint(x, y)) {
-			return nodes[i];
-		}
-	}
-	for(var i = 0; i < links.length; i++) {
-		if(links[i].containsPoint(x, y)) {
-			return links[i];
-		}
-	}
-	return null;
-}
-
-function snapNode(node) {
-	for(var i = 0; i < nodes.length; i++) {
-		if(nodes[i] == node) continue;
-
-		if(Math.abs(node.x - nodes[i].x) < snapToPadding) {
-			node.x = nodes[i].x;
-		}
-
-		if(Math.abs(node.y - nodes[i].y) < snapToPadding) {
-			node.y = nodes[i].y;
-		}
-	}
-}
-
-window.onload = function() {
-	canvas = document.getElementById('canvas');
-	restoreBackup();
-	draw();
-
-	canvas.onmousedown = function(e) {
-		var mouse = crossBrowserRelativeMousePos(e);
-		selectedObject = selectObject(mouse.x, mouse.y);
-		movingObject = false;
-		originalClick = mouse;
-
-		if(selectedObject != null) {
-			if(shift && selectedObject instanceof Node) {
-				currentLink = new SelfLink(selectedObject, mouse);
-			} else {
-				movingObject = true;
-				deltaMouseX = deltaMouseY = 0;
-				if(selectedObject.setMouseStart) {
-					selectedObject.setMouseStart(mouse.x, mouse.y);
-				}
-			}
-			resetCaret();
-		} else {
-			clearInterval(caretTimer);
-			if(shift) {
-				currentLink = new TemporaryLink(mouse, mouse);
-			}
-		}
-
-		draw();
-
-		if(canvasHasFocus()) {
-			// disable drag-and-drop only if the canvas is already focused
-			return false;
-		} else {
-			// otherwise, let the browser switch the focus away from wherever it was
-			resetCaret();
-			return true;
-		}
-	};
-
-	canvas.ondblclick = function(e) {
-		var mouse = crossBrowserRelativeMousePos(e);
-		selectedObject = selectObject(mouse.x, mouse.y);
-
-		if(selectedObject == null) {
-			selectedObject = new Node(mouse.x, mouse.y);
-			nodes.push(selectedObject);
-			resetCaret();
-			draw();
-		} else if(selectedObject instanceof Node) {
-			selectedObject.isAcceptState = !selectedObject.isAcceptState;
-			draw();
-		}
-	};
-
-	canvas.onmousemove = function(e) {
-		var mouse = crossBrowserRelativeMousePos(e);
-
-		if(currentLink != null) {
-			var targetNode = selectObject(mouse.x, mouse.y);
-			if(!(targetNode instanceof Node)) {
-				targetNode = null;
-			}
-
-			if(selectedObject == null) {
-				if(targetNode != null) {
-					currentLink = new StartLink(targetNode, originalClick);
-				} else {
-					currentLink = new TemporaryLink(originalClick, mouse);
-				}
-			} else {
-				if(targetNode == selectedObject) {
-					currentLink = new SelfLink(selectedObject, mouse);
-				} else if(targetNode != null) {
-					currentLink = new Link(selectedObject, targetNode);
-				} else {
-					currentLink = new TemporaryLink(selectedObject.closestPointOnCircle(mouse.x, mouse.y), mouse);
-				}
-			}
-			draw(false);
-		}
-
-		if(movingObject) {
-			selectedObject.setAnchorPoint(mouse.x, mouse.y);
-			if(selectedObject instanceof Node) {
-				snapNode(selectedObject);
-			}
-			draw(false);
-		}
-	};
-
-	canvas.onmouseup = function(e) {
-		movingObject = false;
-
-		if(currentLink != null) {
-			if(!(currentLink instanceof TemporaryLink)) {
-				selectedObject = currentLink;
-				links.push(currentLink);
-				resetCaret();
-			}
-			currentLink = null;
-			draw();
-		} else {
-			actualizacion();
-		}
-	};
-}
-
-var shift = false;
-
-document.onkeydown = function(e) {
-	var key = crossBrowserKey(e);
-
-	if(key == 16) {
-		shift = true;
-	} else if(!canvasHasFocus()) {
-		// don't read keystrokes when other things have focus
-		return true;
-	} else if(key == 8) { // backspace key
-		if(selectedObject != null && 'text' in selectedObject) {
-			selectedObject.text = selectedObject.text.substr(0, selectedObject.text.length - 1);
-			resetCaret();
-			draw();
-		}
-
-		// backspace is a shortcut for the back button, but do NOT want to change pages
-		return false;
-	} else if(key == 46) { // delete key
-		if(selectedObject != null) {
-			for(var i = 0; i < nodes.length; i++) {
-				if(nodes[i] == selectedObject) {
-					nodes.splice(i--, 1);
-				}
-			}
-			for(var i = 0; i < links.length; i++) {
-				if(links[i] == selectedObject || links[i].node == selectedObject || links[i].nodeA == selectedObject || links[i].nodeB == selectedObject) {
-					links.splice(i--, 1);
-				}
-			}
-			selectedObject = null;
-			draw();
-		}
-	}
-};
-
-document.onkeyup = function(e) {
-	var key = crossBrowserKey(e);
-
-	if(key == 16) {
-		shift = false;
-	}
-};
-
-document.onkeypress = function(e) {
-	// don't read keystrokes when other things have focus
-	var key = crossBrowserKey(e);
-	if (!canvasHasFocus()) {
-		// don't read keystrokes when other things have focus
-		return true;
-	} else if (key >= 0x20 && key <= 0x7E && !e.metaKey && !e.altKey && !e.ctrlKey && selectedObject != null && 'text' in selectedObject) {
-		selectedObject.text += String.fromCharCode(key);
-		resetCaret();
-		draw();
-
-		// don't let keys do their actions (like space scrolls down the page)
-		return false;
-	} else if (key == 8) {
-		// backspace is a shortcut for the back button, but do NOT want to change pages
-		return false;
-	} else if (e.ctrlKey && key == 26) {
-		undo(e.shiftKey);
-		return false;
-	}
-};
-
-function crossBrowserKey(e) {
-	e = e || window.event;
-	return e.which || e.keyCode;
-}
-
-function crossBrowserElementPos(e) {
-	e = e || window.event;
-	var obj = e.target || e.srcElement;
-	var x = 0, y = 0;
-	while(obj.offsetParent) {
-		x += obj.offsetLeft;
-		y += obj.offsetTop;
-		obj = obj.offsetParent;
-	}
-	return { 'x': x, 'y': y };
-}
-
-function crossBrowserMousePos(e) {
-	e = e || window.event;
-	return {
-		'x': e.pageX || e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft,
-		'y': e.pageY || e.clientY + document.body.scrollTop + document.documentElement.scrollTop,
-	};
-}
-
-function crossBrowserRelativeMousePos(e) {
-	var element = crossBrowserElementPos(e);
-	var mouse = crossBrowserMousePos(e);
-	return {
-		'x': mouse.x - element.x,
-		'y': mouse.y - element.y
-	};
 }
 
 function joinBounds(r1,r2) {
@@ -1163,10 +898,81 @@ function transiciones() {
 		return !(f instanceof StartLink);
 	});
 }
+function nuevoEstado() {
+	var backup = {
+		'nodes': [],
+		'links': [],
+	};
+	for(var i = 0; i < nodes.length; i++) {
+		var node = nodes[i];
+		var backupNode = {
+			'x': node.x,
+			'y': node.y,
+			'text': node.text,
+			'isAcceptState': node.isAcceptState,
+		};
+		backup.nodes.push(backupNode);
+	}
+	for(var i = 0; i < links.length; i++) {
+		var link = links[i];
+		var backupLink = null;
+		if(link instanceof SelfLink) {
+			backupLink = {
+				'type': 'SelfLink',
+				'node': nodes.indexOf(link.node),
+				'text': link.text,
+				'anchorAngle': link.anchorAngle,
+			};
+		} else if(link instanceof StartLink) {
+			backupLink = {
+				'type': 'StartLink',
+				'node': nodes.indexOf(link.node),
+				'text': link.text,
+				'deltaX': link.deltaX,
+				'deltaY': link.deltaY,
+			};
+		} else if(link instanceof Link) {
+			backupLink = {
+				'type': 'Link',
+				'nodeA': nodes.indexOf(link.nodeA),
+				'nodeB': nodes.indexOf(link.nodeB),
+				'text': link.text,
+				'lineAngleAdjust': link.lineAngleAdjust,
+				'parallelPart': link.parallelPart,
+				'perpendicularPart': link.perpendicularPart,
+			};
+		}
+		if(backupLink != null) {
+			backup.links.push(backupLink);
+		}
+	}
+	return backup;
+}
+
+function mostrarTupla() {
+	const data = construir(setTupla);
+	if (data) {
+		let clase = {[AR]:"AF",[AP]:"AP"}[dataGuardada.clase];
+		if (!dataGuardada.det) {
+			clase += "N";
+		}
+		clase += "D";
+		let tupla = `Q : { ${
+			data.Q.join(', ')
+		} }, \\Sigma : { ${
+			data.A.join(', ')
+		} }, \\delta : <a href="javascript:delta()">\\delta</a>, q_0 : ${
+			data.q0
+		}, F : { ${
+			data.F.join(', ')
+		} }`;
+		setTupla(`${clase} &lt ${tupla} &gt`);
+	}
+}
 
 function btnGuardar() {
 	descargar('data:text/plain;charset=utf-8,' +
-		encodeURIComponent(JSON.stringify({mde:E.actual})), 'mde');
+		encodeURIComponent(JSON.stringify({mde:nuevoEstado()})), 'mde');
 }
 
 let dataGuardada = {};
@@ -1220,15 +1026,19 @@ function construir(fallar=(x)=>{}) {
 	let det = true;
 	for (let t of d) {
 		let s = simboloTransicion(t.text, clase);
-		if (s != '\\lambda' && !(data.A.includes(s))) {
+		if (s == '\\lambda') {
+			det = false;
+		} else if (!data.A.includes(s)) {
 			data.A.push(s);
 		}
-		let n1 = nodoSrc(t);
-		let n2 = nodoDst(t);
+		let n1 = nodoSrc(t).text;
+		let n2 = nodoDst(t).text;
 		if (n1 in data.d) {
 			if (s in data.d[n1]) {
-				data.d[n1][s].push(n2);
-				det = false;
+				if (!data.d[n1][s].includes(n2)) {
+					data.d[n1][s].push(n2);
+					det = false;
+				}
 			} else {
 				data.d[n1][s] = [n2];
 			}
@@ -1241,7 +1051,7 @@ function construir(fallar=(x)=>{}) {
 }
 
 function delta() {
-	let d = "d:"
+	let d = "\delta:"
 	let deltaGuardada = dataGuardada.data.d;
 	let f = dataGuardada.det
 	? (x) => x[0]
@@ -1251,7 +1061,7 @@ function delta() {
 			d += `\n ${q}   x   ${s}   :   ${f(deltaGuardada[q][s])}`;
 		}
 	}
-	alert(d);
+	alert(convertLatexShortcuts(d));
 }
 
 const AR = 0;
@@ -1268,75 +1078,19 @@ function simboloTransicion(t, c) {
 }
 
 function nodoSrc(t) {
-	return (t instanceof SelfLink
-	? t.node
-	: t.nodeA).text;
+	return (t instanceof Link
+	? t.nodeA
+	: t.node);
 }
 
 function nodoDst(t) {
-	return (t instanceof SelfLink
-	? t.node
-	: t.nodeB).text;
+	return (t instanceof Link
+	? t.nodeB
+	: t.node);
 }
 
 function setTupla(tupla) {
-	document.getElementById("tupla").innerHTML = tupla;
-}
-
-const E = {
-	undoStack: [],
-	redoStack: [],
-	actual: nuevoEstado()
-};
-function nuevoEstado() {
-	var backup = {
-		'nodes': [],
-		'links': [],
-	};
-	for(var i = 0; i < nodes.length; i++) {
-		var node = nodes[i];
-		var backupNode = {
-			'x': node.x,
-			'y': node.y,
-			'text': node.text,
-			'isAcceptState': node.isAcceptState,
-		};
-		backup.nodes.push(backupNode);
-	}
-	for(var i = 0; i < links.length; i++) {
-		var link = links[i];
-		var backupLink = null;
-		if(link instanceof SelfLink) {
-			backupLink = {
-				'type': 'SelfLink',
-				'node': nodes.indexOf(link.node),
-				'text': link.text,
-				'anchorAngle': link.anchorAngle,
-			};
-		} else if(link instanceof StartLink) {
-			backupLink = {
-				'type': 'StartLink',
-				'node': nodes.indexOf(link.node),
-				'text': link.text,
-				'deltaX': link.deltaX,
-				'deltaY': link.deltaY,
-			};
-		} else if(link instanceof Link) {
-			backupLink = {
-				'type': 'Link',
-				'nodeA': nodes.indexOf(link.nodeA),
-				'nodeB': nodes.indexOf(link.nodeB),
-				'text': link.text,
-				'lineAngleAdjust': link.lineAngleAdjust,
-				'parallelPart': link.parallelPart,
-				'perpendicularPart': link.perpendicularPart,
-			};
-		}
-		if(backupLink != null) {
-			backup.links.push(backupLink);
-		}
-	}
-	return backup;
+	document.getElementById("tupla").innerHTML = convertLatexShortcuts(tupla);
 }
 
 function restaurar(backup) {
@@ -1374,66 +1128,6 @@ function restaurar(backup) {
 	}
 }
 
-function undo(re) {
-	const from = (re ? E.redoStack : E.undoStack);
-	const to = (re ? E.undoStack : E.redoStack);
-	if (from.length > 0) {
-		nuevo = from[from.length-1];
-		from.splice(from.length-1);
-		to.push(E.actual);
-		E.actual = nuevo;
-		restaurar(nuevo);
-		draw(false);
-		algoCambio(nuevo);
-	}
-}
-
-function actualizacion() {
-	const ultimo = E.actual;
-	const nuevo = nuevoEstado();
-	if (distintos(ultimo, nuevo)) {
-		E.undoStack.push(ultimo);
-		E.redoStack = [];
-		E.actual = nuevo;
-		algoCambio(nuevo);
-	}
-}
-
-function algoCambio(nuevo) {
-	saveBackup(nuevo);
-	const data = construir(setTupla);
-	if (data) {
-		let clase = {[AR]:"AF",[AP]:"AP"}[dataGuardada.clase];
-		if (!dataGuardada.det) {
-			clase += "N";
-		}
-		clase += "D";
-		let tupla = `Q : { ${
-			data.Q.join(', ')
-		} }, A : { ${
-			data.A.join(', ')
-		} }, d : <a href="javascript:delta()">d</a>, q0 : ${
-			data.q0
-		}, F : { ${
-			data.F.join(', ')
-		} }`;
-		setTupla(`${clase} &lt ${tupla} &gt`);
-	}
-}
-
-function distintos(o1, o2) {
-	if (typeof o1 != typeof o2) { return true; }
-	if (typeof o1 == 'object') {
-		let ks1 = Object.keys(o1);
-		let ks2 = Object.keys(o2);
-		return ks1.length != ks2.length ||
-			ks1.some((k)=> !(k in o2)) ||
-			ks2.some((k)=> !(k in o1)) ||
-			ks1.some((k)=> distintos(o1[k], o2[k]))
-	}
-	return o1 != o2;
-}
-
 function dibujarRectangulo(r,c) {
 	if (c === undefined) { c = canvas.getContext('2d'); }
 	dibujarLinea(r.x,r.y,r.x+r.w,r.y,c);
@@ -1451,10 +1145,9 @@ function dibujarLinea(x0,y0,x1,y1,c) {
 
 function btnExportar() {
 	let exporter = new ExportAsSVG();
-	let oldSelectedObject = selectedObject;
-	selectedObject = null;
-	drawUsing(exporter);
-	selectedObject = oldSelectedObject;
+	prepararParaExportar(function() {
+		drawUsing(exporter);
+	});
 	let svgData = exporter.toSVG();
 	descargar('data:image/svg+xml;base64,' + btoa(svgData), 'svg');
 }
@@ -1469,11 +1162,36 @@ function descargar(contenido, ext) {
   document.body.removeChild(e);
 }
 
-function redimensionar() {
-	canvas.width = window.innerWidth - 20;
-	canvas.height = window.innerHeight - 70;
-	draw(false);
+function crossBrowserRelativeMousePos(e) {
+	var element = crossBrowserElementPos(e);
+	var mouse = crossBrowserMousePos(e);
+	return {
+		'x': mouse.x - element.x,
+		'y': mouse.y - element.y
+	};
 }
 
-window.addEventListener('resize', redimensionar, false);
-window.addEventListener('load', redimensionar, false);
+function crossBrowserElementPos(e) {
+	e = e || window.event;
+	var obj = e.target || e.srcElement;
+	var x = 0, y = 0;
+	while(obj.offsetParent) {
+		x += obj.offsetLeft;
+		y += obj.offsetTop;
+		obj = obj.offsetParent;
+	}
+	return { 'x': x, 'y': y };
+}
+
+function crossBrowserKey(e) {
+	e = e || window.event;
+	return e.which || e.keyCode;
+}
+
+function crossBrowserMousePos(e) {
+	e = e || window.event;
+	return {
+		'x': e.pageX || e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft,
+		'y': e.pageY || e.clientY + document.body.scrollTop + document.documentElement.scrollTop,
+	};
+}
