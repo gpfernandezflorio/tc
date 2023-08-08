@@ -620,24 +620,13 @@ TemporaryLink.prototype.draw = function(c) {
 	drawArrow(c, this.to.x, this.to.y, Math.atan2(this.to.y - this.from.y, this.to.x - this.from.x));
 };
 
-function restoreBackup(optKey, optFun) {
-	if(!localStorage || !JSON) {
-		return;
-	}
-
+function mdeRestoreBackup(optKey, optFun) {
 	const todo = [{k:'fsm',f:restaurar}];
 	if (optKey && optFun) {
 		todo.push({k:optKey, f:optFun});
 	}
 
-	for (let t of todo) {
-		try {
-			var data = JSON.parse(localStorage[t.k]);
-			t.f(data);
-		} catch(e) {
-			localStorage[t.k] = '';
-		}
-	}
+	restoreBackup(todo);
 }
 
 function det(a, b, c, d, e, f, g, h, i) {
@@ -658,24 +647,6 @@ function circleFromThreePoints(x1, y1, x2, y2, x3, y3) {
 
 function fixed(number, digits) {
 	return number.toFixed(digits).replace(/0+$/, '').replace(/\.$/, '');
-}
-
-var greekLetterNames = [ 'Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta', 'Theta', 'Iota', 'Kappa', 'Lambda', 'Mu', 'Nu', 'Xi', 'Omicron', 'Pi', 'Rho', 'Sigma', 'Tau', 'Upsilon', 'Phi', 'Chi', 'Psi', 'Omega' ];
-
-function convertLatexShortcuts(text) {
-	// html greek characters
-	for(var i = 0; i < greekLetterNames.length; i++) {
-		var name = greekLetterNames[i];
-		text = text.replace(new RegExp('\\\\' + name, 'g'), String.fromCharCode(913 + i + (i > 16)));
-		text = text.replace(new RegExp('\\\\' + name.toLowerCase(), 'g'), String.fromCharCode(945 + i + (i > 16)));
-	}
-
-	// subscripts
-	for(var i = 0; i < 10; i++) {
-		text = text.replace(new RegExp('_' + i, 'g'), String.fromCharCode(8320 + i));
-	}
-
-	return text;
 }
 
 function textToXML(text) {
@@ -830,31 +801,11 @@ function btnNuevo() {
 }
 
 function btnAbrir() {
-	var input = document.createElement('input');
-	input.type = 'file';
-	
-	input.onchange = e => { 
-		 // getting a hold of the file reference
-		 var file = e.target.files[0]; 
-	
-		 // setting up the reader
-		 var reader = new FileReader();
-		 reader.readAsText(file,'UTF-8');
-	
-		 // here we tell the reader what to do when it's done reading...
-		 reader.onload = readerEvent => {
-				var content = readerEvent.target.result; // this is the content!
-				try {
-					const json = JSON.parse(content);
-					const mde = json.mde;
-					restaurar(mde);
-					draw();
-				} catch(e) {
-					console.log(e);
-				}
-		 }
-	}
-	input.click();
+	abrirArchivo(function(json) {
+		const mde = json.mde;
+		restaurar(mde);
+		draw();
+	}, console.log);
 }
 
 function nodosSinNombre() {
@@ -971,8 +922,8 @@ function mostrarTupla() {
 }
 
 function btnGuardar() {
-	descargar('data:text/plain;charset=utf-8,' +
-		encodeURIComponent(JSON.stringify({mde:nuevoEstado()})), 'mde');
+	descargarArchivo('data:text/plain;charset=utf-8,' +
+		encodeURIComponent(JSON.stringify({mde:nuevoEstado()})), 'mde.mde');
 }
 
 let dataGuardada = {};
@@ -1149,17 +1100,7 @@ function btnExportar() {
 		drawUsing(exporter);
 	});
 	let svgData = exporter.toSVG();
-	descargar('data:image/svg+xml;base64,' + btoa(svgData), 'svg');
-}
-
-function descargar(contenido, ext) {
-	let e = document.createElement('a');
-  e.setAttribute('href', contenido);
-  e.setAttribute('download', 'mde.' + ext);
-  e.style.display = 'none';
-  document.body.appendChild(e);
-  e.click();
-  document.body.removeChild(e);
+	descargarArchivo('data:image/svg+xml;base64,' + btoa(svgData), 'mde.svg');
 }
 
 function crossBrowserRelativeMousePos(e) {
@@ -1194,4 +1135,37 @@ function crossBrowserMousePos(e) {
 		'x': e.pageX || e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft,
 		'y': e.pageY || e.clientY + document.body.scrollTop + document.documentElement.scrollTop,
 	};
+}
+
+/*
+ * base64.js - Base64 encoding and decoding functions
+ *
+ * See: https://developer.mozilla.org/en-US/docs/Web/API/btoa
+ *      https://developer.mozilla.org/en-US/docs/Web/API/atob
+ *
+ * Copyright (c) 2007, David Lindquist <david.lindquist@gmail.com>
+ * Released under the MIT license
+ */
+
+if (typeof btoa == 'undefined') {
+	function btoa(str) {
+			var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+			var encoded = [];
+			var c = 0;
+			while (c < str.length) {
+					var b0 = str.charCodeAt(c++);
+					var b1 = str.charCodeAt(c++);
+					var b2 = str.charCodeAt(c++);
+					var buf = (b0 << 16) + ((b1 || 0) << 8) + (b2 || 0);
+					var i0 = (buf & (63 << 18)) >> 18;
+					var i1 = (buf & (63 << 12)) >> 12;
+					var i2 = isNaN(b1) ? 64 : (buf & (63 << 6)) >> 6;
+					var i3 = isNaN(b2) ? 64 : (buf & 63);
+					encoded[encoded.length] = chars.charAt(i0);
+					encoded[encoded.length] = chars.charAt(i1);
+					encoded[encoded.length] = chars.charAt(i2);
+					encoded[encoded.length] = chars.charAt(i3);
+			}
+			return encoded.join('');
+	}
 }

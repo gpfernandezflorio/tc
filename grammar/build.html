@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>Gramática</title>
+	<style>
+
+body {
+	background: #DFDFDF;
+	font: 14px/18px 'Lucida Grande', 'Segoe UI', sans-serif;
+	overflow-y: hidden;
+}
+
+textarea {
+  font-size: 18px;
+  resize: none;
+}
+
+#exec {
+  border: 1px solid #000;
+  margin-bottom: 5px;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.readonly {
+	color: #666;
+	background-color: #ccc;
+}
+
+.floatPane {
+	float: left;
+	position: absolute;
+	border: 1px solid #000;
+	border-radius: 5px;
+	background-color: #DFDFDF;
+	cursor: move;
+}
+
+.floatPaneContent {
+	padding: 5px;
+}
+
+#pasos {
+  width: 100%;
+  overflow-y: scroll;
+}
+
+.current {
+  color: #33b;
+}
+
+.restante {
+  min-width: 50%;
+}
+
+  </style>
+	<script src="../common.js"></script>
+	<script src="build.js"></script>
+
+</head><body>
+	<div id="main">
+    <span style="height:30px;display:block;float:left;">
+      <button onclick="btnNuevo();"">Nueva</button>
+      <button onclick="btnAbrir();"">Abrir</button>
+      <button onclick="btnGuardar();"">Guardar</button>
+    </span>
+    <span style="height:30px;display:block;float:right;">
+      <button onclick="btnEjecutar();" id="btnEjecutar">Ejecutar</button>
+      <button onclick="btnAyuda();">Ayuda</button>
+    </span>
+    <table id="tablaBuild">
+      <tr>
+        <td>
+          <textarea id="inputGrammar"></textarea>
+        </td>
+        <td>
+          <div id="exec" hidden>
+            <div class="floatPane" id="debug" style="top:50px;right:50%;">
+              <div style="width:100%; height:20px; background-color: #33b;"></div>
+              <div class="floatPaneContent">
+                <button onclick="btnReset();">RESET</button>
+                <div class="floatPaneContent" id="btnProds"></div>
+              </div>
+            </div>
+            <table id="pasos"></table>
+          </div>
+        </td>
+      </tr>
+    </table>
+    <p style="display:inline;" id="tupla"></p>
+  </div>
+  <div id="help" hidden>
+    <span style="height:30px;display:block;float:right;">
+      <button onclick="btnAyuda();">Cerrar</button>
+    </span>
+    <p style="display:inline;">Instrucciones:</p>
+    <ul>
+      <!--li><b>Agregar un estado:</b> hacer doble click en un lugar vacío</li>
+      <li><b>Agregar una transición entre estados:</b> con la tecla shift apretada, hacer click sobre un estado y arrastrar hasta otro estado</li>
+      <li><b>Mover un elemento:</b> hacer click sobre el elemento y arrastrarlo</li>
+      <li><b>Eliminar un elemento:</b> hacer click sobre el elemento y apretar la tecla suprimir</li>
+    </ul><ul>
+      <li><b>Convertir en estado final:</b> hacer doble click sobre un estado</li>
+      <li><b>Para usar subíndices:</b> escribir un guión bajo antes del número (por ejemplo, "q_0")</li>
+      <li><b>Para usar letras griegas:</b> escribir una contrabarra seguida del nombre de la letra en inglés (por ejemplo, "\lambda")</li-->
+    </ul>
+  </div>
+
+<scribe-shadow id="crxjs-ext" style="position: fixed; width: 0px; height: 0px; top: 0px; left: 0px; z-index: 2147483647; overflow: visible;"><template shadowrootmode="open"><div id="root-scribe-elem" style="position: fixed; width: 0px; height: 0px; top: 0px; left: 0px; overflow: visible; color: rgb(15, 23, 42);"></div><link rel="stylesheet" href="chrome-extension://okfkdaglfjjjfefdcppliegebpoegaii/assets/style.css"></template></scribe-shadow></body></html>

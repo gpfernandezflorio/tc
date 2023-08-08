@@ -33,7 +33,7 @@ let dragging = false;
 window.onload = function() {
 	canvas = document.getElementById('canvas');
   debugPane = document.getElementById('debug');
-	restoreBackup('run', function(run) {
+	mdeRestoreBackup('run', function(run) {
     document.getElementById('inputCadena').value = run.cadena || '';
   });
 	redimensionar();
@@ -210,12 +210,8 @@ function union(l1, l2) {
   return l1.reduce((rec, x) => rec.includes(x) ? rec : rec.concat([x]), l2);
 }
 
-function saveBackup() {
-	if(!localStorage || !JSON) {
-		return;
-	}
-
-	localStorage['run'] = JSON.stringify({
+function mdeSaveBackup() {
+  saveBackup('run', {
     cadena: document.getElementById('inputCadena').value
   });
 }

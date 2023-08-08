@@ -33,12 +33,8 @@ function draw(save=true) {
 
 /* --- --- --- */
 
-function saveBackup(nuevo) {
-	if(!localStorage || !JSON) {
-		return;
-	}
-
-	localStorage['fsm'] = JSON.stringify(nuevo);
+function mdeSaveBackup(nuevo) {
+	saveBackup('fsm', nuevo);
 }
 
 var caretTimer;
@@ -85,7 +81,7 @@ function snapNode(node) {
 
 window.onload = function() {
 	canvas = document.getElementById('canvas');
-	restoreBackup();
+	mdeRestoreBackup();
 	redimensionar();
   mostrarTupla();
 
@@ -292,7 +288,7 @@ function actualizacion() {
 }
 
 function algoCambio(nuevo) {
-	saveBackup(nuevo);
+	mdeSaveBackup(nuevo);
 	mostrarTupla();
 }
 
