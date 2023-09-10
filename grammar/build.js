@@ -110,15 +110,16 @@ function construir(fallar=(x)=>{}) {
     if (i.length > 0) {
       let p = i.split("->");
       if (p.length > 0) {
+        if (p.length > 2) {
+          let i_flecha = i.indexOf("->");
+          p = [i.substring(0,i_flecha), i.substr(i_flecha+2)];
+        }
         let m = null;
         if (p.length == 1 || p[1] == p[1].trim() || p[1].trim() == 'λ') { // lambda
           if (p[0] == i) {
             fallar(`Falta la flecha en la producción ${j}: ${i}`);
             return;
           }
-        } else if (p.length > 2) {
-          fallar(`La producción ${j} tiene más de una flecha: ${i}`);
-          return;
         } else {
           m = p[1].trim();
           usaEspacios = usaEspacios || m.includes(" ");
