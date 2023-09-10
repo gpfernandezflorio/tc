@@ -10,6 +10,20 @@
   overflow-y: auto;
 }
 
+.floatPane {
+  width: 50%;
+  height: calc(100% - 80px);
+}
+
+.floatPaneContent {
+  height: calc(100% - 80px);
+}
+
+#inputCadena {
+  height: 100%;
+  width: calc(100% - 5px);
+}
+
 </style>
 	<script src="../common.js"></script>
 	<script src="build.js"></script>
@@ -36,10 +50,12 @@
         </td>
         <td>
           <div id="exec" hidden>
-            <div class="floatPane" id="debug" style="top:50px;right:50%;">
+            <div class="floatPane" id="debug" style="top:50px;right:50px;">
               <div style="width:100%; height:20px; background-color: #33b;"></div>
               <div class="floatPaneContent">
-                cadena: <input type="text" id="inputCadena" oninput="tokenSaveBackup();"><button onclick="tokenizar();">GO</button>
+                cadena: <br/>
+                <textarea id="inputCadena" oninput="tokenSaveBackup();"></textarea> <br/>
+                <button onclick="tokenizar();">GO</button>
               </div>
             </div>
             <div id="tokenListExec"></div>

@@ -48,14 +48,16 @@ function btnAyuda() {
 
 function execDom() {
   let i = 0;
-  execList.innerHTML = '';
+  let content = '<table><th><td>Token</td><td>RegExp</td></th>'
   while (i < tokenList.children.length) {
-    let t = document.createElement('div');
-    t.innerHTML = `${i} - token: ${document.getElementById(`token_${i}`).value}` +
-    ` regExp: ${document.getElementById(`regexp_${i}`).value}`;
-    execList.appendChild(t);
+    content += `<tr><td>${i}</td><td>${
+      convertLatexShortcuts(document.getElementById(`token_${i}`).value)
+    }</td><td>${
+      convertLatexShortcuts(document.getElementById(`regexp_${i}`).value)
+    }</td></tr>`;
     i++;
   }
+  execList.innerHTML = content+'</table>';
 }
 
 function addToken() {
@@ -66,8 +68,8 @@ function addToken() {
 function addTokenDom(data={}) {
   let t = document.createElement('div');
   let i = tokenList.children.length;
-  t.innerHTML = `${i} - token: <input type="text" id="token_${i}" oninput="actualizar();">` +
-    `regExp: <input type="text" id="regexp_${i}" oninput="actualizar();">` +
+  t.innerHTML = `${i} - Token: <input type="text" id="token_${i}" oninput="actualizar();">` +
+    `RegExp: <input type="text" id="regexp_${i}" oninput="actualizar();">` +
     `<button onclick="delToken(${i});"">-</button>`;
   tokenList.appendChild(t);
   document.getElementById(`token_${i}`).value = data.key || '';
@@ -134,7 +136,8 @@ function construir(fallar=(x)=>{}) {
       fallar(`Falta la expresión regular del token ${i}`);
       return;
     }
-    if (false /*ver que tokens[i].regexp es efectivamente una regexp*/) {
+    let regexp = compileRegexp(convertLatexShortcuts(tokens[i].regexp));
+    if (regexp === null) {
       fallar(`La expresión regular del token ${i} es inválida: ${tokens[i].regexp}`);
       return;
     }
@@ -144,18 +147,72 @@ function construir(fallar=(x)=>{}) {
     }
     regexps.push({
       key:tokens[i].key,
-      regexp:tokens[i].regexp // crear RegExp a partir de esto.
+      regexp:regexp
     });
   }
   return regexps;
 }
 
+function compileRegexp(s) {
+  try {
+    return new RegExp(s);
+  } catch (error) {
+  }
+  return null;
+}
+
 function tokenizar() {
   let tokenizador = construir(alert);
   if (tokenizador) {
-    let cadena = document.getElementById('inputCadena').value;
-    // tokenizar cadena...
+    let cadena = convertLatexShortcuts(document.getElementById('inputCadena').value);
+    let contador = {
+      i:0, linea:0, columna:0
+    };
+    let res = [];
+    ignorarEspacios(cadena, contador);
+    while (contador.i < cadena.length) {
+      let r = tokenizarDesde(tokenizador, cadena.substr(contador.i));
+      if (r === null) {
+        alert("Cadena inválida");
+        return;
+      }
+      r.contador = {i:contador.linea, j:contador.columna};
+      res.push(r);
+      contador.i += r.source.length;
+      contador.columna += r.source.length;
+      ignorarEspacios(cadena, contador);
+    }
+    alert(res.map((x) => convertLatexShortcuts(x.token)).join(' '));
+    return res;
   }
+}
+
+function ignorarEspacios(cadena, contador) {
+  while (true) {
+    if (cadena[contador.i] === ' ') {
+      contador.i ++;
+      contador.columna ++;
+    } else if (cadena[contador.i] === '\n') {
+      contador.i ++;
+      contador.fila ++;
+      contador.columna = 0;
+    } else {
+      return;
+    }
+  }
+}
+
+function tokenizarDesde(tokenizador, cadena) {
+  for (let t of tokenizador) {
+    let z = t.regexp.exec(cadena);
+    if (z && z.index == 0) {
+      return {
+        token:t.key,
+        source:z[0]
+      };
+    }
+  }
+  return null;
 }
 
 function mostrarTupla() {
