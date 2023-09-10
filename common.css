@@ -1,0 +1,30 @@
+body {
+	background: #DFDFDF;
+	font: 14px/18px 'Lucida Grande', 'Segoe UI', sans-serif;
+	overflow-y: hidden;
+}
+
+#exec {
+  border: 1px solid #000;
+  margin-bottom: 5px;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.readonly {
+	color: #666;
+	background-color: #ccc;
+}
+
+.floatPane {
+	float: left;
+	position: absolute;
+	border: 1px solid #000;
+	border-radius: 5px;
+	background-color: #DFDFDF;
+	cursor: move;
+}
+
+.floatPaneContent {
+	padding: 5px;
+}
