@@ -73,4 +73,24 @@ function convertLatexShortcuts(text) {
 	}
 
 	return text;
-}
+};
+
+let debugPane;
+let originalClick = null;
+let dragging = false;
+
+function inicializarDebug() {
+  debugPane = document.getElementById('debug');
+
+  debugPane.onmousedown = function(e) {
+    originalClick = {mouse:e, pane:debugPane.getClientRects()[0]};
+    dragging = true;
+    document.onmousemove = mouseDrag;
+  };
+
+  document.onmouseup = function(e) {
+    dragging = false;
+    originalClick = null;
+    delete document.onmousemove;
+  };
+};

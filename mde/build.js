@@ -49,7 +49,6 @@ var cursorVisible = true;
 var selectedObject = null; // either a Link or a Node
 var currentLink = null; // a Link
 var movingObject = false;
-var originalClick;
 
 function selectObject(x, y) {
 	for(var i = 0; i < nodes.length; i++) {

@@ -5,7 +5,7 @@ function btnNuevo() {
 
 function btnAbrir() {
 	abrirArchivo(function(json) {
-		restaurar(json);
+		Token.restaurar(json);
     actualizar();
 	}, console.log);
 }
@@ -22,7 +22,7 @@ function btnImportar() {
 function btnEjecutar() {
   if (exec.hidden) { // GO
     if (construir(alert)) {
-      execDom();
+      Token.show(dataGuardada, execList);
       tokenArea.hidden = true;
       exec.hidden = false;
       document.getElementById('btnEjecutar').innerHTML = "Editar";
@@ -44,21 +44,7 @@ function btnAyuda() {
 		divAyuda.hidden = true;
 		divPrincipal.hidden = false;
 	}
-}
-
-function execDom() {
-  let i = 0;
-  let content = '<table><th><td>Token</td><td>RegExp</td></th>'
-  while (i < tokenList.children.length) {
-    content += `<tr><td>${i}</td><td>${
-      convertLatexShortcuts(document.getElementById(`token_${i}`).value)
-    }</td><td>${
-      convertLatexShortcuts(document.getElementById(`regexp_${i}`).value)
-    }</td></tr>`;
-    i++;
-  }
-  execList.innerHTML = content+'</table>';
-}
+};
 
 function addToken() {
   addTokenDom();
@@ -88,7 +74,7 @@ function delToken(i) {
 }
 
 function tokenSaveBackup() {
-  saveBackup('run', {
+  saveBackup('runT', {
     cadena: document.getElementById('inputCadena').value
   });
 }
@@ -113,16 +99,7 @@ function nuevoEstado() {
     tokens
   };
   return dataGuardada;
-}
-
-function restaurar(tokenizador) {
-  tokenList.innerHTML = '';
-  if ('tokens' in tokenizador) {
-    for (let t of tokenizador.tokens) {
-      addTokenDom(t);
-    }
-  }
-}
+};
 
 function construir(fallar=(x)=>{}) {
   let tokens = dataGuardada.tokens || [];
@@ -226,10 +203,6 @@ function setTupla(tupla) {
 	document.getElementById("tupla").innerHTML = convertLatexShortcuts(tupla);
 }
 
-let debugPane;
-let originalClick = null;
-let dragging = false;
-
 function mouseDrag(e) {
   if (dragging && originalClick !== null) {
     debugPane.style.right = `${window.innerWidth - (originalClick.pane.right + e.x - originalClick.mouse.x)}px`;
@@ -248,25 +221,13 @@ window.onload = function() {
   tokenList = document.getElementById("tokenList");
   exec = document.getElementById("exec");
   execList = document.getElementById("tokenListExec");
-  debugPane = document.getElementById('debug');
+  inicializarDebug();
   redimensionar();
-	restoreBackup([{k:'token', f:restaurar}]);
-	restoreBackup([{k:'run', f:function(run) {
+	restoreBackup([{k:'token', f:Token.restaurar}]);
+	restoreBackup([{k:'runT', f:function(run) {
     document.getElementById('inputCadena').value = run.cadena || '';
   }}]);
   actualizar();
-
-  debugPane.onmousedown = function(e) {
-    originalClick = {mouse:e, pane:debugPane.getClientRects()[0]};
-    dragging = true;
-    document.onmousemove = mouseDrag;
-  };
-
-  document.onmouseup = function(e) {
-    dragging = false;
-    originalClick = null;
-    delete document.onmousemove;
-  };
 }
 
 function redimensionar() {

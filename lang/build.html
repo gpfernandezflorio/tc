@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-	<title>Gramática</title>
+	<title>Lenguaje</title>
 	<link rel="stylesheet" href="../common.css" media="screen,projection">
   <style>
 
@@ -22,15 +22,23 @@ textarea {
   min-width: 50%;
 }
 
+#tokenList {
+  border: 1px solid #000;
+  padding: 10px;
+  overflow-y: auto;
+  margin-bottom: 5px;
+}
+
   </style>
 	<script src="../common.js"></script>
 	<script src="build.js"></script>
-  <script src="grammar.js"></script>
+  <script src="../grammar/grammar.js"></script>
+  <script src="../token/token.js"></script>
 
 </head><body>
 	<div id="main">
     <span style="height:30px;display:block;float:left;">
-      <button onclick="btnNuevo();"">Nueva</button>
+      <button onclick="btnNuevo();"">Nuevo</button>
       <button onclick="btnAbrir();"">Abrir</button>
       <button onclick="btnGuardar();"">Guardar</button>
     </span>
@@ -41,15 +49,30 @@ textarea {
     <table id="tablaBuild">
       <tr>
         <td>
-          <textarea id="inputGrammar"></textarea>
+          Gramática: <button onclick="btnAbrirGrammar();"">Abrir</button>
+          <textarea class="readonly" id="inputGrammar" readonly></textarea>
         </td>
         <td>
-          <div id="exec" hidden>
-            <div class="floatPane" id="debug" style="top:50px;left:20px;">
+          Reglas semánticas: <button onclick="btnAbrirSemantic();"">Abrir</button>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Tokenizador: <button onclick="btnAbrirToken();"">Abrir</button>
+          <div id="tokenList"></div>
+        </td>
+        <td>
+          <div id="exec">
+            <div class="floatPane" id="debug" style="top:50px;left:20%;" hidden>
               <div style="width:100%; height:20px; background-color: #33b;"></div>
               <div class="floatPaneContent">
-                <button onclick="btnReset();">RESET</button>
-                <div class="floatPaneContent" id="btnProds"></div>
+                Cadena: <span id="cadena"></span>
+                <button id="btnGrammarGen" onclick="btnGrammarGen();">Cambiar</button>
+                <div class="floatPaneContent" id="grammarGen" hidden>
+                  <button onclick="btnReset();">RESET</button>
+                  <button onclick="btnCancelarGrammar();">Cancelar</button>
+                  <div id="btnProds"></div>
+                </div>
               </div>
             </div>
             <table id="pasos"></table>
@@ -65,14 +88,6 @@ textarea {
     </span>
     <p style="display:inline;">Instrucciones:</p>
     <ul>
-      <!--li><b>Agregar un estado:</b> hacer doble click en un lugar vacío</li>
-      <li><b>Agregar una transición entre estados:</b> con la tecla shift apretada, hacer click sobre un estado y arrastrar hasta otro estado</li>
-      <li><b>Mover un elemento:</b> hacer click sobre el elemento y arrastrarlo</li>
-      <li><b>Eliminar un elemento:</b> hacer click sobre el elemento y apretar la tecla suprimir</li>
-    </ul><ul>
-      <li><b>Convertir en estado final:</b> hacer doble click sobre un estado</li>
-      <li><b>Para usar subíndices:</b> escribir un guión bajo antes del número (por ejemplo, "q_0")</li>
-      <li><b>Para usar letras griegas:</b> escribir una contrabarra seguida del nombre de la letra en inglés (por ejemplo, "\lambda")</li-->
     </ul>
   </div>
 </body></html>

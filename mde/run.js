@@ -26,30 +26,14 @@ function draw(save=true) {
 
 /* --- --- --- */
 
-let debugPane;
-let originalClick = null;
-let dragging = false;
-
 window.onload = function() {
 	canvas = document.getElementById('canvas');
-  debugPane = document.getElementById('debug');
-	mdeRestoreBackup('run', function(run) {
+  inicializarDebug();
+	mdeRestoreBackup('runG', function(run) {
     document.getElementById('inputCadena').value = run.cadena || '';
   });
 	redimensionar();
   mostrarTupla();
-
-  debugPane.onmousedown = function(e) {
-    originalClick = {mouse:e, pane:debugPane.getClientRects()[0]};
-    dragging = true;
-    document.onmousemove = mouseDrag;
-  };
-
-  document.onmouseup = function(e) {
-    dragging = false;
-    originalClick = null;
-    delete document.onmousemove;
-  };
 }
 
 function mouseDrag(e) {
@@ -211,7 +195,7 @@ function union(l1, l2) {
 }
 
 function mdeSaveBackup() {
-  saveBackup('run', {
+  saveBackup('runG', {
     cadena: document.getElementById('inputCadena').value
   });
 }
