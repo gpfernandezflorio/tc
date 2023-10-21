@@ -28,3 +28,9 @@ body {
 .floatPaneContent {
 	padding: 5px;
 }
+
+.hliner {
+  width: -webkit-fill-available;
+  display: inline-block;
+  background-color: #000;
+}

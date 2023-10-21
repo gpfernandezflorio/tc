@@ -29,11 +29,23 @@ textarea {
   margin-bottom: 5px;
 }
 
+#rulesList {
+  border: 1px solid #000;
+  padding: 10px;
+  overflow-y: auto;
+  margin-bottom: 5px;
+}
+
+#arbolsCanvas{
+  border: 1px solid #555;
+}
+
   </style>
 	<script src="../common.js"></script>
 	<script src="build.js"></script>
   <script src="../grammar/grammar.js"></script>
   <script src="../token/token.js"></script>
+  <script src="../semantic/semantic.js"></script>
 
 </head><body>
 	<div id="main">
@@ -49,16 +61,23 @@ textarea {
     <table id="tablaBuild">
       <tr>
         <td>
-          Gramática: <button onclick="btnAbrirGrammar();"">Abrir</button>
+          Gramática:
+          <button id="btnAbrirGrammar" onclick="btnAbrirGrammar();">Abrir</button>
+          <button id="btnEditarGrammar" onclick="btnEditarGrammar();">Editar</button>
           <textarea class="readonly" id="inputGrammar" readonly></textarea>
         </td>
         <td>
-          Reglas semánticas: <button onclick="btnAbrirSemantic();"">Abrir</button>
+          Reglas semánticas:
+          <button id="btnAbrirSemantic" onclick="btnAbrirSemantic();">Abrir</button>
+          <button id="btnEditarSemantic" onclick="btnEditarSemantic();">Editar</button>
+          <div id="rulesList"></div>
         </td>
       </tr>
       <tr>
         <td>
-          Tokenizador: <button onclick="btnAbrirToken();"">Abrir</button>
+          Tokenizador:
+          <button id="btnAbrirToken" onclick="btnAbrirToken();">Abrir</button>
+          <button id="btnEditarToken" onclick="btnEditarToken();">Editar</button>
           <div id="tokenList"></div>
         </td>
         <td>
@@ -68,10 +87,14 @@ textarea {
               <div class="floatPaneContent">
                 Cadena: <span id="cadena"></span>
                 <button id="btnGrammarGen" onclick="btnGrammarGen();">Cambiar</button>
+                <button id="btnRun" onclick="btnRun();">Ejecutar</button>
                 <div class="floatPaneContent" id="grammarGen" hidden>
                   <button onclick="btnReset();">RESET</button>
                   <button onclick="btnCancelarGrammar();">Cancelar</button>
                   <div id="btnProds"></div>
+                </div>
+                <div class="floatPaneContent" id="arbolShow">
+                  <canvas id="arbolsCanvas"></canvas>
                 </div>
               </div>
             </div>

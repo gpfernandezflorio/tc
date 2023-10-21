@@ -1,0 +1,1 @@
+{"rules":[{"in":"M N","out":"M' N","pre":"M --> M'","name":"E-App1"},{"in":"V N","out":"V N'","pre":"N --> N'","name":"E-App2"},{"in":"(\\lambda x.M) V","out":"M{x <-- V}","pre":"","name":"E-AppAbs"}]}
