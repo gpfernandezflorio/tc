@@ -903,20 +903,25 @@ function nuevoEstado() {
 function mostrarTupla() {
 	const data = construir(setTupla);
 	if (data) {
-		let clase = {[AR]:"AF",[AP]:"AP"}[dataGuardada.clase];
+		let clase = dataGuardada.clase;
+		let tupla = `Q : { ${
+			data.Q.join(', ')
+		} }, \\Sigma : { ${
+			data.A.join(', ') + (clase === AP
+				? ' }, \\Gamma : { ' + data.G.join(', ') : ''
+			)
+		} }, \\delta : <a href="javascript:delta()">\\delta</a>, q_0 : ${
+			data.q0 + (clase === AP
+				? ', Z_0 : ' + data.Z : ''
+			)
+		}, F : { ${
+			data.F.join(', ')
+		} }`;
+		clase = {[AR]:"AF",[AP]:"AP"}[clase];
 		if (!dataGuardada.det) {
 			clase += "N";
 		}
 		clase += "D";
-		let tupla = `Q : { ${
-			data.Q.join(', ')
-		} }, \\Sigma : { ${
-			data.A.join(', ')
-		} }, \\delta : <a href="javascript:delta()">\\delta</a>, q_0 : ${
-			data.q0
-		}, F : { ${
-			data.F.join(', ')
-		} }`;
 		setTupla(`${clase} &lt ${tupla} &gt`);
 	}
 }
@@ -974,7 +979,11 @@ function construir(fallar=(x)=>{}) {
 		q0:fI[0].node.text,
 		F:nodosFinales().map((x)=>x.text)
 	};
+	if (clase === AP) {
+		data.G = [];
+	}
 	let det = true;
+	let z;
 	for (let t of d) {
 		let s = simboloTransicion(t.text, clase);
 		if (s == '\\lambda') {
@@ -982,34 +991,75 @@ function construir(fallar=(x)=>{}) {
 		} else if (!data.A.includes(s)) {
 			data.A.push(s);
 		}
+		if (clase === AP) {
+			z = simboloPila1(t.text);
+			if (!data.G.includes(z)) {
+				data.G.push(z);
+			}
+		}
 		let n1 = nodoSrc(t).text;
 		let n2 = nodoDst(t).text;
+		if (clase === AP) {
+			n2 = [n2, simboloPila2(t.text)];
+		}
 		if (n1 in data.d) {
-			if (s in data.d[n1]) {
-				if (!data.d[n1][s].includes(n2)) {
-					data.d[n1][s].push(n2);
+			let b = data.d[n1];
+			if (s in b) {
+				b = b[s];
+				if (clase === AP) {
+					if (!(z in b)) {
+						b[z] = [];
+					}
+					b = b[z]
+				}
+				if (!yaEsta(clase,b,n2)) {
+					b.push(n2);
 					det = false;
 				}
 			} else {
-				data.d[n1][s] = [n2];
+				b[s] = clase === AP ? {[z]:[n2]} : [n2];
 			}
 		} else {
-			data.d[n1] = {[s]:[n2]};
+			data.d[n1] = {[s]:(clase === AP ? {[z]:[n2]} : [n2])};
 		}
+	}
+	if (clase === AP) {
+		data.Z = data.G[0];
 	}
 	dataGuardada = {clase, data, det};
 	return data;
 }
 
+function yaEsta(c,b,n) {
+	return c === AP
+		? b.some((x) => x[0] == n[0] && x[1] == n[1])
+		: b.includes(n);
+}
+
+function yaEstaQ(c,b,n) {
+	return c === AP
+		? b.some((x) => x[0] == n)
+		: b.includes(n);
+}
+
 function delta() {
 	let d = "\delta:"
 	let deltaGuardada = dataGuardada.data.d;
-	let f = dataGuardada.det
-	? (x) => x[0]
-	: (x) => `{ ${x.join(', ')} }`;
+	stack = (x) => x.length == 0 ? "\\lambda" : x.join('');
+	let sh = (x) => (Array.isArray(x) ? x[0] + '   x   ' + stack(x[1]) : x);
+	let res = dataGuardada.det
+	? (x) => sh(x[0])
+	: (x) => `{ ${x.map(sh).join(', ')} }`;
 	for (let q in deltaGuardada) {
 		for (let s in deltaGuardada[q]) {
-			d += `\n ${q}   x   ${s}   :   ${f(deltaGuardada[q][s])}`;
+			let b = deltaGuardada[q][s];
+			if (Array.isArray(b)) {
+				d += `\n ${q}   x   ${s}   :   ${res(b)}`;
+			} else {
+				for (let z in b) {
+					d += `\n ${q}   x   ${s}   x   ${z}   :   ${res(b[z])}`;
+				}
+			}
 		}
 	}
 	alert(convertLatexShortcuts(d));
@@ -1018,14 +1068,40 @@ function delta() {
 const AR = 0;
 const AP = 1;
 function claseAutomata(d, fallar) {
-	return AR;
+	return d.length > 0 && d.every(esDeAP) ? AP : AR;
 }
 
-function simboloTransicion(t, c) {
+function esDeAP(d) {
+	return indicesAP(d.text) !== null;
+}
+
+function indicesAP(t) {
+	let ip = t.lastIndexOf('|');
+	if (ip > 0) {
+		let ic = t.lastIndexOf(',');
+		if (ic < ip) {
+			return {c:ic, p:ip};
+		}
+	}
+	return null;
+}
+
+function simboloTransicion(t, clase) {
+	let c = clase === undefined ? dataGuardada.clase : clase;
 	return (c == AR
 		? t
-		: t.split(',')[0]
+		: t.substring(0, indicesAP(t).c)
 	).trim();
+}
+
+function simboloPila1(t) {
+	return t.substring(indicesAP(t).c + 1, indicesAP(t).p).trim();
+}
+
+function simboloPila2(t) {
+	let text = t.substring(indicesAP(t).p + 1).trim();
+	if (text == "\\lambda") { return []; }
+	return text.split('');
 }
 
 function nodoSrc(t) {

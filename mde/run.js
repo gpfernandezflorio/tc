@@ -8,11 +8,22 @@ function drawUsing(c) {
 
 function seleccionado(x) {
   let elementosSeleccionados = x instanceof Node
-    ? (configActual || {q:null}).q
+    ? nodosSeleccionados()
     : enTransicion
   ;
   if (elementosSeleccionados == null) { return false; }
   return elementosSeleccionados.includes(x);
+}
+
+function nodosSeleccionados() {
+  if (configActual === null) {
+    return null;
+  }
+  let res = configActual.q;
+  if (dataGuardada.clase === AP) {
+    res = res.map((x) => x[0]);
+  }
+  return res;
 }
 
 function prepararParaExportar(f) { f(); }
@@ -91,7 +102,8 @@ function validarCadena() {
 
 function reiniciar() {
   enTransicion = flechasIniciales();
-  configActual = {q:enTransicion.map(nodoDst), i:cadenaCargada};
+  let target = dataGuardada.clase === AP ? ((x) => [nodoDst(x), [dataGuardada.data.Z]]) : nodoDst;
+  configActual = {q:enTransicion.map(target), i:cadenaCargada};
   actualizar();
 }
 
@@ -105,10 +117,13 @@ function configuracionInstantanea() {
 }
 
 function nodosStr(Q) {
+  let f = dataGuardada.clase === AP
+    ? (q) => `(${q[0].text}, ${q[1].join('')})`
+    : (q) => q.text;
   if (dataGuardada.det) {
-    return Q[0].text;
+    return f(Q[0]);
   }
-  return `{ ${Q.map((x)=>x.text).join(', ')} }`;
+  return `{ ${Q.map(f).join(', ')} }`;
 }
 
 function btnReset() {
@@ -142,16 +157,22 @@ function btnFullStep() {
   if (enTransicion) {
     btnStep(false);
   }
-  while(proximasTransiciones().some((x) => x.text == '\\lambda')) {
+  while(puedoAgregarEstados(proximasTransiciones())) {
     btnStep(false); btnStep(false);
   }
   actualizar();
 }
 
+function puedoAgregarEstados(ts) {
+  return ts.some((x) =>
+    esTransicionLambda(x) && !yaEstaQ(dataGuardada.clase, configActual.q, nodoDst(x))
+  )
+}
+
 function btnStep(show=true) {
   if (enTransicion && enTransicion.some((x) => !(x instanceof StartLink))) {
     let nuevosEstados = estadosAlcanzables(enTransicion);
-    if (enTransicion.some((x) => x.text != '\\lambda')) {
+    if (enTransicion.some((x) => !esTransicionLambda(x))) {
       configActual.i = configActual.i.slice(1);
       configActual.q = nuevosEstados;
     } else {
@@ -170,24 +191,49 @@ function btnStep(show=true) {
 }
 
 function proximasTransiciones() {
-  let ts = transiciones().filter((x) => configActual.q.includes(nodoSrc(x)));
+  let filtro = dataGuardada.clase === AP
+    ? (x) => configActual.q.some((q) =>
+      q[0] == nodoSrc(x) && q[1][0] == simboloPila1(x.text)
+    ) : (x) => configActual.q.includes(nodoSrc(x));
+  let ts = transiciones().filter(filtro);
   return ts.filter(
-    puedoUsarUnaLambda(ts)
-    ? (x) => x.text == '\\lambda'
-    : (x) => convertLatexShortcuts(x.text) == configActual.i[0]
+    puedoAgregarEstados(ts)
+    ? (x) => esTransicionLambda(x)
+    : (x) => convertLatexShortcuts(simboloTransicion(x.text)) == configActual.i[0]
   );
 }
 
+function nodoXpila(t) {
+  let res = [];
+  for (let q of configActual.q) {
+    if (q[0] == nodoSrc(t) && q[1][0] == simboloPila1(t.text)) {
+      res.push([nodoDst(t), simboloPila2(t.text).concat(q[1].slice(1))]);
+    }
+  }
+	return res;
+}
+
 function estadosAlcanzables(ts) {
-  return ts.map(nodoDst).reduce(
-    (rec, x) => (rec.includes(x) ? rec : rec.concat(x)), []
+  let target = dataGuardada.clase === AP ? nodoXpila : nodoDst;
+  let res = ts.map(target);
+  if (dataGuardada.clase === AP) { // lista de listas de estados
+    res = res.reduce((rec, x) => rec.concat(x), []); // lista de estados
+  }
+  return res.reduce(
+    (rec, x) => (yaEsta(dataGuardada.clase, rec, x) ? rec : rec.concat([x])), []
   );
 }
 
 function puedoUsarUnaLambda(ts) {
-  return ts.some((x) => x.text == '\\lambda') &&
-    estadosAlcanzables(ts.filter((x) => x.text == '\\lambda'))
-      .some((x) => !configActual.q.includes(x));
+  return ts.some((x) => esTransicionLambda(x)) &&
+    estadosAlcanzables(ts.filter((x) => esTransicionLambda(x)))
+      .some((x) => !configActual.q.includes(
+        dataGuardada.clase === AP ? x[0] : x
+      ));
+}
+
+function esTransicionLambda(t) {
+  return simboloTransicion(t.text) == '\\lambda';
 }
 
 function union(l1, l2) {
