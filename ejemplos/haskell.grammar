@@ -1,0 +1,1 @@
+{"grammar":{"text":"P -> D P\nP -> E\nD -> id A = E\nA -> E A\nA -> \\lambda\nE -> id\nE -> E E\nE -> op1 E\nE -> E op2 E\nE -> (E)","user":[]}}

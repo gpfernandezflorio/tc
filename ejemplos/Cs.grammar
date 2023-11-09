@@ -1,0 +1,1 @@
+{"grammar":{"text":"O -> v\nO -> [ C ]\nO -> O . v\nO -> O . v <= B\nC -> \\lambda\nC -> v = B\nB -> c ( v ) O","user":[]}}

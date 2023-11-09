@@ -1,0 +1,1 @@
+{"grammar":{"text":"P -> D P\nP -> C\nD -> H R\nC -> H M\nH -> id ( A )\nR -> :- H M\nR -> .\nM -> , H M\nM -> .\nA -> T B\nA -> \\lambda\nB -> , T B\nB -> \\lambda\nT -> id ( A )\nT -> var","user":[]}}
