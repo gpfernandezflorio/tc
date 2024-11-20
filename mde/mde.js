@@ -1101,7 +1101,7 @@ function simboloPila1(t) {
 function simboloPila2(t) {
 	let text = t.substring(indicesAP(t).p + 1).trim();
 	if (text == "\\lambda") { return []; }
-	return text.split('');
+	return text.split(" ");
 }
 
 function nodoSrc(t) {
